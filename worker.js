@@ -506,7 +506,7 @@ async function handleRequest(request) {
                 <div class="row justify-content-center mt-5">
                     <div class="col-md-12">
                         <p class="text-center">Click the button below to download the file!</p>
-                        <a href="${config.fileLink}" class="btn btn-primary btn-block">Download File</a>
+                        <a href="${fileLink}" class="btn btn-primary btn-block">Download File</a>
                     </div>
                 </div>
                 -->
@@ -520,7 +520,7 @@ async function handleRequest(request) {
                     <div class="col-md-12">
                         <p class="text-center">Or copy the link below!</p>
                         <div class="input-group">
-                            <input type="text" value="${config.fileLink}" id="fileLink" class="form-control" readonly>
+                            <input type="text" value="${fileLink}" id="fileLink" class="form-control" readonly>
                             <div class="input-group-append">
                                 <button onclick="copyLink()" class="btn btn-secondary">Copy</button>
                             </div>
@@ -541,7 +541,7 @@ async function handleRequest(request) {
             }
     
             var qrcode = new QRCode(document.getElementById("qrcode"), {
-                text: "${config.fileLink}",
+                text: "${fileLink}",
                 width: 256,
                 height: 256,
             });
