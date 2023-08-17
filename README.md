@@ -1,3 +1,10 @@
+<h2 align="center">Happy 78th Indonesian Independence Day</h2>
+<p align="center" valign="top">
+  <a href="https://en.wikipedia.org/wiki/Independence_Day_(Indonesia)"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/78_RI_2023.svg" width="20%" alt="Indonesian Independence Day Image"/></a>
+</p>
+<h4 align="center">In honor of Indonesia's Independence Day, we present a special project that embodies the spirit of unity and progress.</h4>
+<hr />
+
 # Serverless Temporary File Sharing using Cloudflare Worker and Google Drive API
 **Exploring Free and Unlimited Sharing Platforms**
 
