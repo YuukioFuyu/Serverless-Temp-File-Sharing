@@ -15,24 +15,25 @@ const config = {
     META_URL: "", // Example => your.domain.com
 
     // Style and Theme Color
-    HOME_PAGE_FORM_COLOR: "", // Default => 0,0,0
-    UPLOAD_PAGE_FORM_COLOR: "", // Default => 0,0,0
-    EXPIRED_PAGE_FORM_COLOR: "", // Default => 0,0,0
-    ERROR_404_PAGE_FORM_COLOR: "", // Default => 0,0,0
-    ERROR_404_FILE_FORM_COLOR: "", // Default => 0,0,0
-    ERROR_501_UPLOAD_FORM_COLOR: "", // Default => 0,0,0
-    ERROR_501_DOWNLOAD_FORM_COLOR: "", // Default => 0,0,0
+    HOME_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
+    UPLOAD_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
+    EXPIRED_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
+    ERROR_404_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
+    ERROR_404_FILE_FORM_COLOR: "", // Default => 255, 255, 255
+    ERROR_501_UPLOAD_FORM_COLOR: "", // Default => 255, 255, 255
+    ERROR_501_DOWNLOAD_FORM_COLOR: "", // Default => 255, 255, 255
 
     // Background URL
-    HOME_PAGE_BACKGROUND: "", // Default => None
-    UPLOAD_PAGE_BACKGROUND: "", // Default => None
-    EXPIRED_PAGE_BACKGROUND: "", // Default => None
-    ERROR_404_PAGE_BACKGROUND: "", // Default => None
-    ERROR_404_FILE_BACKGROUND: "", // Default => None
-    ERROR_501_UPLOAD_BACKGROUND: "", // Default => None
-    ERROR_501_DOWNLOAD_BACKGROUND: "", // Default => None
+    HOME_PAGE_BACKGROUND: "", // Default => Animated Gradient
+    UPLOAD_PAGE_BACKGROUND: "", // Default => Animated Gradient
+    EXPIRED_PAGE_BACKGROUND: "", // Default => Animated Gradient
+    ERROR_404_PAGE_BACKGROUND: "", // Default => Animated Gradient
+    ERROR_404_FILE_BACKGROUND: "", // Default => Animated Gradient
+    ERROR_501_UPLOAD_BACKGROUND: "", // Default => Animated Gradient
+    ERROR_501_DOWNLOAD_BACKGROUND: "", // Default => Animated Gradient
     // End of Main Configuration
 };
+
 // Begin Script
 addEventListener('fetch', (event) => {
     event.respondWith(handleRequest(event.request));
@@ -44,7 +45,7 @@ async function handleRequest(request) {
 
     if (url.pathname === "/") {
         return new Response(uploadPage, {
-            headers: { 'content-type': 'text/html' },
+            headers: { 'content-type': 'text/html; charset=utf-8' },
         });
     } else if (url.pathname === "/result") {
         const fileId = url.searchParams.get("id");
@@ -57,12 +58,12 @@ async function handleRequest(request) {
             const encodedFileName = decodeURIComponent(fileName);
             const fileLink = `https://${host}/download?id=${fileId}&name=${encodeURIComponent(encodedFileName)}`;
             return new Response(downloadPage(fileLink, encodedFileName), {
-                headers: { 'content-type': 'text/html' },
+                headers: { 'content-type': 'text/html; charset=utf-8' },
             });
         } else {
             return new Response(notFoundFile(), {
                 status: 404,
-                headers: { 'content-type': 'text/html' },
+                headers: { 'content-type': 'text/html; charset=utf-8' },
             });
         }
     } else if (url.pathname === "/download") {
@@ -113,7 +114,7 @@ async function handleRequest(request) {
             } else {
                 return new Response(errordownloadPage(), {
                     status: 500,
-                    headers: { 'content-type': 'text/html' },
+                    headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             }
         } else {
@@ -123,12 +124,12 @@ async function handleRequest(request) {
                 // File exists but download failed (transient API error / cold start)
                 return new Response(errordownloadPage(), {
                     status: 500,
-                    headers: { 'content-type': 'text/html' },
+                    headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             } else {
                 return new Response(expired(), {
                     status: 404,
-                    headers: { 'content-type': 'text/html' },
+                    headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             }
         }
@@ -147,7 +148,7 @@ async function handleRequest(request) {
             } else {
                 return new Response(errorPage(), {
                     status: 500,
-                    headers: { 'content-type': 'text/html' },
+                    headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             }
         } catch (error) {
@@ -161,7 +162,7 @@ async function handleRequest(request) {
 
     return new Response(notFoundPage(), {
         status: 404,
-        headers: { 'content-type': 'text/html' },
+        headers: { 'content-type': 'text/html; charset=utf-8' },
     });
 }
 
@@ -246,793 +247,916 @@ async function getAccessToken() {
     return tokenData.access_token;
 }
 
+// ===========================
+// Shared UI Components
+// ===========================
+
+function pageMeta(title) {
+    return `
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>${title}</title>
+    <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta name="theme-color" content="#6C63FF">
+    <meta name="application-name" content="${config.PAGE_TITLE || "YTemp Sharing"}">
+    <meta name="robots" content="index, follow">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, temporary, file-sharing, cloudflare-workers"}">
+    <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
+    <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
+    <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">`;
+}
+
+const sharedCSS = `
+    :root {
+        --color-primary: #6C63FF;
+        --color-secondary: #00D2FF;
+        --color-accent: #7DD3E8;
+        --text-dark: #1e2a3a;
+        --text-muted: #6b7c93;
+        --bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        --smooth: cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+        min-height: 100%; width: 100%;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        overflow-x: hidden; color: var(--text-dark);
+    }
+
+    /* Body Wrapper */
+    .body-wrapper {
+        position: relative; width: 100%;
+        min-height: 100vh; min-height: 100dvh;
+        display: flex; justify-content: center; align-items: center;
+        padding: clamp(15px, 3vh, 30px) 15px;
+        z-index: 10;
+    }
+
+    /* Background Layer */
+    .bg-layer {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        z-index: 1;
+        animation: zoomLoop 25s linear infinite alternate;
+        filter: brightness(0.85);
+    }
+    .bg-gradient {
+        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    }
+    @keyframes zoomLoop {
+        0% { transform: scale(1); }
+        100% { transform: scale(1.08); }
+    }
+
+    /* Animated Background Orbs */
+    .bg-orb {
+        position: fixed; border-radius: 50%;
+        filter: blur(100px); opacity: 0.4;
+        z-index: 2; pointer-events: none;
+    }
+    .bg-orb-1 {
+        width: 500px; height: 500px; top: -150px; left: -150px;
+        background: #6C63FF;
+        animation: orbFloat1 20s ease-in-out infinite alternate;
+    }
+    .bg-orb-2 {
+        width: 400px; height: 400px; bottom: -120px; right: -120px;
+        background: #00D2FF;
+        animation: orbFloat2 18s ease-in-out infinite alternate;
+    }
+    .bg-orb-3 {
+        width: 300px; height: 300px; top: 40%; left: 60%;
+        background: #ff6b9d; opacity: 0.25;
+        animation: orbFloat3 22s ease-in-out infinite alternate;
+    }
+    @keyframes orbFloat1 {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(80px, 100px) scale(1.15); }
+    }
+    @keyframes orbFloat2 {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(-60px, -80px) scale(1.1); }
+    }
+    @keyframes orbFloat3 {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(-100px, 50px) scale(0.9); }
+    }
+
+    /* Cinematic Intro: Dip Fade */
+    .dip-white {
+        position: fixed; top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: #0f0c29; z-index: 9999; pointer-events: none;
+        animation: dipFade 1.5s var(--smooth) forwards;
+    }
+    @keyframes dipFade {
+        0%, 40% { opacity: 1; }
+        100% { opacity: 0; visibility: hidden; }
+    }
+
+    /* Cinematic Intro: Splash Ripple */
+    .splash-overlay {
+        position: fixed; top: 50%; left: 50%;
+        width: 10vw; height: 10vw;
+        background: rgba(108, 99, 255, 0.4);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 9998; pointer-events: none;
+        animation: splashRipple 1.2s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+    }
+    @keyframes splashRipple {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(35); opacity: 0; visibility: hidden; }
+    }
+
+    /* Frosted Glass Card */
+    .glass-card {
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 24px;
+        padding: clamp(20px, 4vh, 40px);
+        width: 100%; max-width: 480px;
+        box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.08),
+            0 0 30px rgba(108, 99, 255, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        opacity: 0; transform: scale(0.85) translateY(40px);
+        animation: gsapPop 1s var(--bounce) 0.5s forwards;
+        z-index: 15;
+    }
+    @keyframes gsapPop {
+        0% { opacity: 0; transform: scale(0.85) translateY(40px); }
+        60% { opacity: 1; transform: scale(1.02) translateY(-5px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Logo Container */
+    .logo-container {
+        text-align: center; margin-bottom: clamp(8px, 2vh, 15px);
+        opacity: 0; transform: translateY(20px);
+        animation: slideUpFade 0.8s var(--smooth) 0.8s forwards, floatSway 4s ease-in-out 1.6s infinite;
+    }
+    .logo-container img {
+        max-width: clamp(50px, 10vh, 80px); height: auto;
+        filter: drop-shadow(0 8px 20px rgba(108, 99, 255, 0.35));
+    }
+    @keyframes floatSway {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-8px) rotate(-2deg); }
+        75% { transform: translateY(5px) rotate(2deg); }
+    }
+
+    /* Stagger Entrance Animations */
+    .stagger-1 { opacity: 0; transform: translateY(20px); animation: slideUpFade 0.8s var(--bounce) 0.9s forwards; }
+    .stagger-2 { opacity: 0; transform: translateX(-20px); animation: slideSideFade 0.8s var(--smooth) 1.05s forwards; }
+    .stagger-3 { opacity: 0; transform: translateY(20px); animation: slideUpFade 0.8s var(--bounce) 1.2s forwards; }
+    .stagger-4 { opacity: 0; transform: translateY(20px); animation: slideUpFade 0.8s var(--bounce) 1.35s forwards; }
+    .stagger-5 { opacity: 0; transform: translateY(20px); animation: slideUpFade 0.8s var(--bounce) 1.5s forwards; }
+    .stagger-6 { opacity: 0; transform: translateY(10px); animation: slideFadeScale 0.8s var(--smooth) 1.65s forwards; }
+    @keyframes slideUpFade { to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideSideFade { to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideFadeScale { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    /* Typography */
+    .card-title {
+        text-align: center;
+        font-size: clamp(1.3rem, 4vh, 1.8rem);
+        font-weight: 800; color: var(--text-dark);
+        margin-bottom: 5px;
+        text-shadow: 0 2px 8px rgba(255, 255, 255, 0.6);
+    }
+    .card-subtitle {
+        text-align: center;
+        font-size: clamp(0.85rem, 3vw, 0.95rem);
+        color: var(--text-muted); font-weight: 500;
+        margin-bottom: clamp(12px, 3vh, 25px);
+    }
+
+    /* Gradient Button */
+    .btn-gradient {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; padding: clamp(12px, 2vh, 16px) 24px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+        border: none; border-radius: 16px;
+        color: #fff; font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+        font-weight: 700; font-family: 'Inter', sans-serif;
+        cursor: pointer; text-decoration: none;
+        transition: all 0.4s var(--bounce);
+        box-shadow: 0 4px 18px rgba(108, 99, 255, 0.35);
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn-gradient:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 0 12px 30px rgba(108, 99, 255, 0.45);
+        background: linear-gradient(135deg, var(--color-secondary), var(--color-accent));
+    }
+    .btn-gradient:active { transform: translateY(2px) scale(0.98); }
+
+    /* Error Code Number */
+    .error-code {
+        font-size: clamp(60px, 15vw, 100px);
+        font-weight: 900; line-height: 1;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Footer */
+    .footer-text {
+        text-align: center; font-size: 0.8rem;
+        color: var(--text-muted); margin-top: clamp(10px, 2vh, 18px);
+        font-weight: 500;
+    }
+
+    /* Countdown */
+    .countdown-num {
+        font-size: clamp(2rem, 8vw, 3rem);
+        font-weight: 900; line-height: 1.2;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(108, 99, 255, 0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(108, 99, 255, 0.5); }
+
+    /* Links */
+    a { color: var(--color-primary); text-decoration: none; font-weight: 600; transition: all 0.3s ease; }
+    a:hover { color: var(--text-dark); text-shadow: 0 0 8px var(--color-accent); }
+`;
+
+function bgLayerHTML(bgUrl) {
+    if (bgUrl) {
+        return `<div class="bg-layer" style="background-image:url('${bgUrl}')"></div>`;
+    }
+    return `<div class="bg-layer bg-gradient"></div>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>`;
+}
+
+// ===========================
+// Page Templates
+// ===========================
+
 const uploadPage = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-      <title>${config.PAGE_TITLE || "Yuuki0 Temporary File Sharing"}</title>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-      <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-      <meta name="theme-color" content="#FF3300">
-      <meta name="application-name" content="YTemp Sharing">
-      <meta name="robots" content="index, follow">
-      <meta name="twitter:card" content="summary">
-      <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-      <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-      <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-      <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-      <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-      <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-      <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-      <meta property="og:type" content="website">
-      <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-      <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-      <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-      <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-      <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-      <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-      <style>
-          body {
-              background-image: url('${config.HOME_PAGE_BACKGROUND}');
-              background-size: cover;
-              background-position: center;
-              background-repeat: no-repeat;
-              height: 100vh;
-              margin: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-          }
-  
-          .logo {
-              text-align: center;
-              margin-bottom: 20px;
-          }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta(config.PAGE_TITLE || "Temporary File Sharing")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.HOME_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
 
-          .logo img {
-              max-width: 35%;
-              height: auto;
-              display: block;
-              margin: 0 auto;
-          }
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed rgba(108, 99, 255, 0.35);
+            border-radius: 16px; padding: clamp(25px, 4vh, 40px) 20px;
+            text-align: center; cursor: pointer;
+            transition: all 0.4s var(--bounce);
+            background: rgba(108, 99, 255, 0.03);
+            position: relative; overflow: hidden;
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--color-primary);
+            background: rgba(108, 99, 255, 0.08);
+            transform: scale(1.02);
+        }
+        .drop-zone-icon {
+            font-size: 2.5rem; color: var(--color-primary);
+            margin-bottom: 10px; opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover .drop-zone-icon { opacity: 1; transform: translateY(-3px); }
+        .drop-zone-text {
+            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            color: var(--text-muted); font-weight: 500;
+        }
 
-          .glass-effect {
-              background-color: rgba(${config.HOME_PAGE_FORM_COLOR || "0, 0, 0"}, 0.5);
-              backdrop-filter: blur(10px);
-              border-radius: 10px;
-              padding: 20px;
-              color: white;
-          }
-  
-          .drop-box {
-              border: 2px dashed #ccc;
-              padding: 20px;
-              text-align: center;
-              cursor: pointer;
-              position: relative;
-            }
-    
-          .preview-media {
-              max-width: 100%;
-              max-height: 200px;
-          }
-    
-          .loading-overlay {
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background-color: rgba(255, 255, 255, 0.8);
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              z-index: 1000;
-          }
-      </style>
-  </head>
-  <body>
-      <div class="glass-effect">
-          <div class="container">
-            <div class="logo">
-               <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+        /* Preview */
+        .preview-media { max-width: 100%; max-height: 200px; border-radius: 12px; }
+        .preview-icon { font-size: 3rem; color: var(--color-primary); opacity: 0.8; }
+        .preview-name {
+            font-size: 0.9rem; color: var(--text-dark);
+            font-weight: 600; margin-top: 8px; word-break: break-all;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; border-radius: 16px;
+        }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(108, 99, 255, 0.15);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- Cinematic Entrance -->
+    <div class="dip-white"></div>
+    <div class="splash-overlay"></div>
+
+    <!-- Background -->
+    ${bgLayerHTML(config.HOME_PAGE_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
-              <h1 class="text-center">${config.PAGE_TITLE || "Temporary File Sharing"}</h1>
-              <form enctype="multipart/form-data" method="POST" action="/upload" class="mt-3" id="uploadForm">
-                  <div class="form-group col-md-12 mt-5">
-                      <div class="drop-box position-relative" id="dropBox">
-                          <input type="file" name="file" id="fileInput" style="display: none;">
-                          <div id="previewContainer"></div>
-                          <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-                              <div class="spinner-border text-primary" role="status">
-                                  <span class="sr-only">Loading...</span>
-                              </div>
-                          </div>
-                          <br>
-                          <p id="dragDropMessage">Drag and drop a file here or click to choose a file</p>
-                      </div>
-                  </div>
-                  <button type="button" class="btn btn-primary btn-block" onclick="uploadFile()">Upload File</button>
-              </form>
-          </div>
-      </div>
-      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-      <script>
-          const dropBox = document.getElementById('dropBox');
-          const fileInput = document.getElementById('fileInput');
-          const previewContainer = document.getElementById('previewContainer');
-          const dragDropMessage = document.getElementById('dragDropMessage');
-          const loadingOverlay = document.getElementById('loadingOverlay');
-          let uploading = false; // Flag to track upload status
-  
-          dropBox.addEventListener('dragover', (e) => {
-              if (!uploading) {
-                  e.preventDefault();
-                  dropBox.style.border = '2px dashed #333';
-              }
-          });
-  
-          dropBox.addEventListener('dragleave', (e) => {
-              if (!uploading) {
-                  e.preventDefault();
-                  dropBox.style.border = '2px dashed #ccc';
-              }
-          });
-  
-          dropBox.addEventListener('drop', (e) => {
+
+            <h1 class="card-title stagger-1">${config.PAGE_TITLE || "Temporary File Sharing"}</h1>
+            <p class="card-subtitle stagger-2">Upload and share files securely</p>
+
+            <form enctype="multipart/form-data" method="POST" action="/upload" id="uploadForm">
+                <div class="stagger-3">
+                    <div class="drop-zone" id="dropBox">
+                        <input type="file" name="file" id="fileInput" style="display:none;">
+                        <div id="previewContainer"></div>
+                        <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+                            <div class="spinner"></div>
+                        </div>
+                        <div id="dragDropMessage">
+                            <div class="drop-zone-icon"><i class="fas fa-cloud-arrow-up"></i></div>
+                            <p class="drop-zone-text">Drag and drop a file here or click to choose</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stagger-4" style="margin-top: clamp(12px, 2vh, 20px);">
+                    <button type="button" class="btn-gradient" onclick="uploadFile()">
+                        <i class="fas fa-upload"></i> Upload File
+                    </button>
+                </div>
+            </form>
+
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
+        </div>
+    </div>
+
+    <script>
+        var dropBox = document.getElementById('dropBox');
+        var fileInput = document.getElementById('fileInput');
+        var previewContainer = document.getElementById('previewContainer');
+        var dragDropMessage = document.getElementById('dragDropMessage');
+        var loadingOverlay = document.getElementById('loadingOverlay');
+        var uploading = false;
+
+        dropBox.addEventListener('dragover', function(e) {
+            if (!uploading) { e.preventDefault(); dropBox.classList.add('drag-over'); }
+        });
+        dropBox.addEventListener('dragleave', function(e) {
+            if (!uploading) { e.preventDefault(); dropBox.classList.remove('drag-over'); }
+        });
+        dropBox.addEventListener('drop', function(e) {
             if (!uploading) {
-                e.preventDefault();
-                dropBox.style.border = '2px dashed #ccc';
-                const file = e.dataTransfer.files[0];
-                fileInput.files = e.dataTransfer.files; // Set the file input's files directly
+                e.preventDefault(); dropBox.classList.remove('drag-over');
+                var file = e.dataTransfer.files[0];
+                fileInput.files = e.dataTransfer.files;
                 previewFile(file);
             }
-          });
-  
-          dropBox.addEventListener('click', () => {
-              if (!uploading) {
-                  fileInput.click();
-              }
-          });
-  
-          fileInput.addEventListener('change', () => {
-              if (!uploading) {
-                  const file = fileInput.files[0];
-                  previewFile(file);
-              }
-          });
-  
-          function previewFile(file) {
-              previewContainer.innerHTML = '';
-  
-              if (file) {
-                  loadingOverlay.style.display = 'none';
-                  dragDropMessage.style.display = 'none';
-  
-                  if (file.type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.classList.add('preview-media');
-                    previewContainer.appendChild(img);
-                } else if (file.type.startsWith('video/')) {
-                    const video = document.createElement('video');
-                    video.src = URL.createObjectURL(file);
-                    video.classList.add('preview-media');
-                    video.controls = true;
-                    previewContainer.appendChild(video);
-                } else if (file.type.startsWith('audio/')) {
-                    const audio = document.createElement('audio');
-                    audio.src = URL.createObjectURL(file);
-                    audio.classList.add('preview-media');
-                    audio.controls = true;
-                    previewContainer.appendChild(audio);
+        });
+        dropBox.addEventListener('click', function() {
+            if (!uploading) fileInput.click();
+        });
+        fileInput.addEventListener('change', function() {
+            if (!uploading) previewFile(fileInput.files[0]);
+        });
+
+        function previewFile(file) {
+            previewContainer.innerHTML = '';
+            if (!file) { dragDropMessage.style.display = 'block'; return; }
+            loadingOverlay.style.display = 'none';
+            dragDropMessage.style.display = 'none';
+
+            if (file.type.startsWith('image/')) {
+                var img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.classList.add('preview-media');
+                previewContainer.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                var video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.classList.add('preview-media');
+                video.controls = true;
+                previewContainer.appendChild(video);
+            } else if (file.type.startsWith('audio/')) {
+                var audio = document.createElement('audio');
+                audio.src = URL.createObjectURL(file);
+                audio.controls = true;
+                previewContainer.appendChild(audio);
+            } else {
+                var icon = document.createElement('i');
+                var ext = file.name.split('.').pop().toLowerCase();
+                var archives = ['zip','iso','tar','gz','rar','7z','xz','bz2','cab','lzh'];
+                var execs = ['exe','apk','deb','rpm','msi','dmg','pkg','bat','sh','bin','app'];
+                if (archives.indexOf(ext) > -1) {
+                    icon.className = 'fas fa-file-zipper preview-icon';
+                } else if (execs.indexOf(ext) > -1) {
+                    icon.className = 'fas fa-gear preview-icon';
                 } else {
-                    const icon = document.createElement('i');
-                    if (file.name.endsWith('.zip') || file.name.endsWith('.iso') || file.name.endsWith('.tar') || file.name.endsWith('.gz') || file.name.endsWith('.rar') || file.name.endsWith('.7z') || file.name.endsWith('.xz') || file.name.endsWith('.bz2') || file.name.endsWith('.z') || file.name.endsWith('.rar5') || file.name.endsWith('.cab') || file.name.endsWith('.lzh') || file.name.endsWith('.arj') || file.name.endsWith('.arc')) {
-                        icon.classList.add('fas', 'fa-file-archive', 'fa-5x', 'mr-2');
-                    } else if (file.name.endsWith('.exe') || file.name.endsWith('.apk') || file.name.endsWith('.deb') || file.name.endsWith('.rpm') || file.name.endsWith('.msi') || file.name.endsWith('.dmg') || file.name.endsWith('.appx') || file.name.endsWith('.pkg') || file.name.endsWith('.zip') || file.name.endsWith('.jar') || file.name.endsWith('.ipa') || file.name.endsWith('.swf') || file.name.endsWith('.war') || file.name.endsWith('.ear') || file.name.endsWith('.xapk') || file.name.endsWith('.msp') || file.name.endsWith('.bat') || file.name.endsWith('.sh') || file.name.endsWith('.com') || file.name.endsWith('.bin') || file.name.endsWith('.elf') || file.name.endsWith('.app') || file.name.endsWith('.gem') || file.name.endsWith('.dapp')) {
-                        icon.classList.add('fas', 'fa-cog', 'fa-5x', 'mr-2');
-                    } else {
-                        icon.classList.add('fas', 'fa-file', 'fa-5x', 'mr-2');
-                    }
-  
-                    const fileName = document.createElement('span');
-                    fileName.textContent = file.name;
-  
-                    const br = document.createElement('br');
-                    previewContainer.appendChild(icon);
-                    previewContainer.appendChild(br);
-                    previewContainer.appendChild(fileName);
+                    icon.className = 'fas fa-file preview-icon';
                 }
-              } else {
-                  loadingOverlay.style.display = 'none';
-                  dragDropMessage.style.display = 'block';
-              }
-          }
-  
-          function uploadFile() {
-              if (!uploading) {
-                  const file = fileInput.files[0];
-                  if (file) {
-                      uploading = true;
-                      const form = document.getElementById('uploadForm');
-                      const formData = new FormData(form);
-  
-                      loadingOverlay.style.display = 'flex';
-                      dragDropMessage.style.display = 'none';
-  
-                      form.submit();
-                  } else {
-                      alert('Please select the file you want to upload.');
-                  }
-              }
-          }
-      </script>
-  </body>
-  </html>
+                previewContainer.appendChild(icon);
+                var br = document.createElement('br');
+                previewContainer.appendChild(br);
+                var name = document.createElement('span');
+                name.className = 'preview-name';
+                name.textContent = file.name;
+                previewContainer.appendChild(name);
+            }
+        }
+
+        function uploadFile() {
+            if (!uploading) {
+                var file = fileInput.files[0];
+                if (file) {
+                    uploading = true;
+                    loadingOverlay.style.display = 'flex';
+                    dragDropMessage.style.display = 'none';
+                    document.getElementById('uploadForm').submit();
+                } else {
+                    alert('Please select the file you want to upload.');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
 `;
 
 function downloadPage(fileLink, fileName) {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>File Shared</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes" || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.UPLOAD_PAGE_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.UPLOAD_PAGE_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-            
-            .qr-code {
-            	border: 10px solid white;
-            	border-radius: 10px;
-            	padding: 0px;
-            	background-color: rgba(${config.ERROR_404_PAGE_FORM_COLOR || "0, 0, 0"}, 0.5);
-            	display: inline-block;
-        	}
-        </style>
-    </head>
-    <body>
-        <div class="glass-effect">
-            <div class="container">
-                <h1 class="text-center">File Uploaded Successfully</h1>
-                <!-- Disable Download Button
-                <div class="row justify-content-center mt-5">
-                    <div class="col-md-12">
-                        <p class="text-center">Click the button below to download the file!</p>
-                        <a href="${fileLink}" class="btn btn-primary btn-block">Download File</a>
-                    </div>
-                </div>
-                -->
-                <div class="row justify-content-center mt-4">
-                    <div class="col-md-12 text-center">
-                        <p class="text-center">Scan the QR code below to download the file!</p>
-                        <div class="qr-code row justify-content-center" id="qrcode"></div>
-                    </div>
-                </div>
-                <div class="row justify-content-center mt-4">
-                    <div class="col-md-12">
-                        <p class="text-center">Or copy the link below!</p>
-                        <div class="input-group">
-                            <input type="text" value="${fileLink}" id="fileLink" class="form-control" readonly>
-                            <div class="input-group-append">
-                                <button onclick="copyLink()" class="btn btn-secondary">Copy</button>
-                            </div>
-                        </div>
-                    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("File Shared")}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.UPLOAD_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+
+        .success-icon {
+            font-size: 2.8rem; margin-bottom: 8px;
+            background: linear-gradient(135deg, #00c853, #00D2FF);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .qr-wrapper {
+            display: inline-block; padding: 12px;
+            background: white; border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s var(--bounce);
+        }
+        .qr-wrapper:hover { transform: scale(1.03); box-shadow: 0 12px 35px rgba(108, 99, 255, 0.15); }
+        .section-label {
+            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            color: var(--text-muted); font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .input-row {
+            display: flex; width: 100%; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        }
+        .link-input {
+            flex: 1; padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(108, 99, 255, 0.15);
+            border-right: none; border-radius: 12px 0 0 12px;
+            font-family: 'Inter', sans-serif; font-size: 0.85rem;
+            color: var(--text-dark); outline: none;
+            transition: all 0.3s ease;
+        }
+        .link-input:focus { border-color: var(--color-primary); }
+        .copy-btn {
+            padding: 12px 18px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            border: none; border-radius: 0 12px 12px 0;
+            color: white; font-weight: 700; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.3s ease;
+            white-space: nowrap; font-size: 0.85rem;
+        }
+        .copy-btn:hover { filter: brightness(1.1); }
+        .copy-btn.copied { background: linear-gradient(135deg, #00c853, #00D2FF); }
+        .file-name-badge {
+            display: inline-block; padding: 8px 16px;
+            background: rgba(108, 99, 255, 0.08);
+            border-radius: 10px; font-size: 0.9rem;
+            font-weight: 600; color: var(--text-dark);
+            word-break: break-all; margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(0, 200, 83, 0.3);"></div>
+    ${bgLayerHTML(config.UPLOAD_PAGE_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+            </div>
+
+            <div class="stagger-1" style="text-align:center;">
+                <div class="success-icon"><i class="fas fa-circle-check"></i></div>
+            </div>
+            <h1 class="card-title stagger-1">Upload Successful!</h1>
+            <p class="card-subtitle stagger-2">Your file is ready to be shared</p>
+
+            <div class="stagger-2" style="text-align:center; margin-bottom: 5px;">
+                <div class="file-name-badge"><i class="fas fa-file" style="margin-right:6px; opacity:0.6;"></i>${fileName}</div>
+            </div>
+
+            <div class="stagger-3" style="text-align:center; margin-bottom: clamp(12px, 2vh, 20px);">
+                <p class="section-label">Scan QR Code to download</p>
+                <div class="qr-wrapper"><div id="qrcode"></div></div>
+            </div>
+
+            <div class="stagger-4" style="margin-bottom: clamp(12px, 2vh, 20px);">
+                <p class="section-label">Or copy the download link</p>
+                <div class="input-row">
+                    <input type="text" value="${fileLink}" id="fileLink" class="link-input" readonly>
+                    <button onclick="copyLink()" class="copy-btn" id="copyBtn">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
                 </div>
             </div>
+
+            <div class="stagger-5">
+                <a href="${fileLink}" class="btn-gradient" style="text-align:center;">
+                    <i class="fas fa-download"></i> Download File
+                </a>
+            </div>
+
+            <p class="footer-text stagger-6">
+                <i class="fas fa-triangle-exclamation" style="color:#ffb347; margin-right:4px;"></i>
+                This is a one-time download. File will be deleted after download.
+            </p>
         </div>
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-        <script>
-            function copyLink() {
-                var copyText = document.getElementById("fileLink");
-                copyText.select();
+    </div>
+
+    <script>
+        function copyLink() {
+            var input = document.getElementById("fileLink");
+            var btn = document.getElementById("copyBtn");
+            input.select(); input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value).then(function() {
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(function() {
                 document.execCommand("copy");
-                alert("Link copied to clipboard: " + copyText.value);
-            }
-    
-            var qrcode = new QRCode(document.getElementById("qrcode"), {
-                text: "${fileLink}",
-                width: 256,
-                height: 256,
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(function() { btn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
             });
-        </script>
-    </body>
-    </html> 
+        }
+        new QRCode(document.getElementById("qrcode"), {
+            text: "${fileLink}",
+            width: 200, height: 200,
+            colorDark: "#1e2a3a", colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    </script>
+</body>
+</html>
     `;
 }
 
 function notFoundFile() {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>File Not Found</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.ERROR_404_FILE_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.ERROR_404_FILE_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-    
-            .error-code {
-                font-size: 100px;
-                font-weight: bolder;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="glass-effect">
-            <div class="container">
-                <h1 class="error-code text-center">404</h1>
-                <h1 class="text-center">File Not Found</h1>
-                <p class="text-center">The requested file was not found or the URL has expired.</p>
-                <div class="text-center mt-5">
-                    <a href="/" class="btn btn-primary">Return to Upload Page</a>
-                </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("File Not Found")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.ERROR_404_FILE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .icon-wrap {
+            font-size: 3rem; margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
+    ${bgLayerHTML(config.ERROR_404_FILE_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card" style="text-align:center;">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
+            <div class="stagger-1"><div class="error-code">404</div></div>
+            <h1 class="card-title stagger-1">File Not Found</h1>
+            <p class="card-subtitle stagger-2">The requested file was not found or the URL has expired.</p>
+            <div class="stagger-3">
+                <a href="/" class="btn-gradient" style="text-align:center;">
+                    <i class="fas fa-arrow-left"></i> Return to Upload
+                </a>
+            </div>
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
         </div>
-    </body>
-    </html>    
+    </div>
+</body>
+</html>
     `;
 }
 
 function expired() {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>File Expired</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.EXPIRED_PAGE_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.EXPIRED_PAGE_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="glass-effect">
-            <div class="container">
-                <h1 class="text-center">File Expired</h1>
-                <p class="text-center">The requested file has expired.</p>
-                <div class="text-center mt-5">
-                    <a href="/" class="btn btn-primary">Return to Upload Page</a>
-                </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("File Expired")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.EXPIRED_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .icon-wrap {
+            font-size: 3rem; margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffb347, #ff6b6b);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(255, 179, 71, 0.3);"></div>
+    ${bgLayerHTML(config.EXPIRED_PAGE_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card" style="text-align:center;">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
+            <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-hourglass-end"></i></div></div>
+            <h1 class="card-title stagger-1">File Expired</h1>
+            <p class="card-subtitle stagger-2">The requested file has expired or already been downloaded.</p>
+            <div class="stagger-3">
+                <a href="/" class="btn-gradient" style="text-align:center;">
+                    <i class="fas fa-arrow-left"></i> Return to Upload
+                </a>
+            </div>
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
         </div>
-    </body>
-    </html>    
+    </div>
+</body>
+</html>
     `;
 }
 
 function errorPage() {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Unexpected Error</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.ERROR_501_UPLOAD_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.ERROR_501_UPLOAD_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-            
-            a {
-                color: #3498db;
-                font-weight: bolder;
-            }
-        </style>
-        <script>
-            // Function to refresh the page after a specified time
-            function refreshPage(seconds) {
-                setTimeout(function () {
-                    location.reload();
-                }, seconds * 1000);
-            }
-    
-            // Function to display countdown and refresh the page
-            function startCountdown(seconds) {
-                var countdown = seconds;
-                var countdownInterval = setInterval(function () {
-                    document.getElementById("countdown").textContent = countdown;
-                    countdown--;
-    
-                    if (countdown < 0) {
-                        clearInterval(countdownInterval);
-                        location.reload();
-                    }
-                }, 1000);
-            }
-    
-            // Call the functions when the page loads
-            document.addEventListener("DOMContentLoaded", function () {
-                refreshPage(5);
-                startCountdown(5);
-            });
-        </script>
-    </head>
-    <body>
-        <div class="container glass-effect">
-            <h1 class="text-center">Unexpected Error</h1>
-            <p class="text-center">Error when uploading files, please reload this page.</p>
-            <p class="text-center mt-5"><b>Don't Panic!</b> Errors may occur due to:</p>
-            <ol>
-                <li>Cloudflare Worker cold start (<a href="https://blog.cloudflare.com/eliminating-cold-starts-with-cloudflare-workers/" target="_blank">Learn more</a>)</li>
-                <li>Cloudflare Worker API request limitations (<a href="https://developers.cloudflare.com/workers/platform/limits/" target="_blank">Learn more</a>)</li>
-                <li>Forwarding file request to Google Drive API timeout</li>
-            </ol>
-            <div class="text-center">
-                <b>Auto reload in:</b>
-                <h1 id="countdown" class="mt-2">5</h1>
-                <a href="#" class="mt-3 btn btn-primary" onclick="location.reload();">Reload</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("Unexpected Error")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.ERROR_501_UPLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .icon-wrap {
+            font-size: 3rem; margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .error-list {
+            text-align: left; padding: 0; margin: 0 0 15px 0;
+            list-style: none;
+        }
+        .error-list li {
+            padding: 8px 12px; margin-bottom: 6px;
+            background: rgba(108, 99, 255, 0.05);
+            border-radius: 10px; font-size: 0.85rem;
+            color: var(--text-dark); font-weight: 500;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .error-list li i { color: var(--color-primary); margin-top: 2px; flex-shrink: 0; }
+        .error-list li a {
+            color: var(--color-primary); text-decoration: underline;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
+    ${bgLayerHTML(config.ERROR_501_UPLOAD_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card" style="text-align:center;">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
+            <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-triangle-exclamation"></i></div></div>
+            <h1 class="card-title stagger-1">Unexpected Error</h1>
+            <p class="card-subtitle stagger-2">Error when uploading files. Don't panic!</p>
+
+            <div class="stagger-3">
+                <ul class="error-list">
+                    <li><i class="fas fa-bolt"></i><span>Cloudflare Worker cold start (<a href="https://blog.cloudflare.com/eliminating-cold-starts-with-cloudflare-workers/" target="_blank">Learn more</a>)</span></li>
+                    <li><i class="fas fa-gauge-high"></i><span>Worker API request limitations (<a href="https://developers.cloudflare.com/workers/platform/limits/" target="_blank">Learn more</a>)</span></li>
+                    <li><i class="fas fa-clock"></i><span>Google Drive API request timeout</span></li>
+                </ul>
+            </div>
+
+            <div class="stagger-4" style="margin-bottom: 12px;">
+                <p style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Auto reload in</p>
+                <div class="countdown-num" id="countdown">5</div>
+            </div>
+
+            <div class="stagger-5">
+                <button onclick="location.reload();" class="btn-gradient">
+                    <i class="fas fa-rotate-right"></i> Reload Now
+                </button>
+            </div>
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
         </div>
-    </body>
-    </html>
+    </div>
+
+    <script>
+        (function() {
+            var count = 5;
+            var el = document.getElementById("countdown");
+            var timer = setInterval(function() {
+                count--;
+                el.textContent = count;
+                if (count <= 0) { clearInterval(timer); location.reload(); }
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>
     `;
 }
 
 function errordownloadPage() {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Unexpected Error</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.ERROR_501_DOWNLOAD_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.ERROR_501_DOWNLOAD_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-            
-            a {
-                color: #3498db;
-                font-weight: bolder;
-            }
-        </style>
-        <script>
-            // Function to refresh the page after a specified time
-            function refreshPage(seconds) {
-                setTimeout(function () {
-                    location.reload();
-                }, seconds * 1000);
-            }
-    
-            // Function to display countdown and refresh the page
-            function startCountdown(seconds) {
-                var countdown = seconds;
-                var countdownInterval = setInterval(function () {
-                    document.getElementById("countdown").textContent = countdown;
-                    countdown--;
-    
-                    if (countdown < 0) {
-                        clearInterval(countdownInterval);
-                        location.reload();
-                    }
-                }, 1000);
-            }
-    
-            // Call the functions when the page loads
-            document.addEventListener("DOMContentLoaded", function () {
-                refreshPage(5);
-                startCountdown(5);
-            });
-        </script>
-    </head>
-    <body>
-        <div class="container glass-effect">
-            <h1 class="text-center">Unexpected Error</h1>
-            <p class="text-center">Error when downloading files, please reload this page.</p>
-            <p class="text-center mt-5"><b>Don't Panic!</b> Errors may occur due to:</p>
-            <ol>
-                <li>Cloudflare Worker cold start (<a href="https://blog.cloudflare.com/eliminating-cold-starts-with-cloudflare-workers/" target="_blank">Learn more</a>)</li>
-                <li>Cloudflare Worker API request limitations (<a href="https://developers.cloudflare.com/workers/platform/limits/" target="_blank">Learn more</a>)</li>
-                <li>Forwarding file request to Google Drive API timeout</li>
-            </ol>
-            <div class="text-center">
-                <b>Auto reload in:</b>
-                <h1 id="countdown" class="mt-2">5</h1>
-                <a href="#" class="mt-3 btn btn-primary" onclick="location.reload();">Reload</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("Download Error")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.ERROR_501_DOWNLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .icon-wrap {
+            font-size: 3rem; margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .error-list {
+            text-align: left; padding: 0; margin: 0 0 15px 0;
+            list-style: none;
+        }
+        .error-list li {
+            padding: 8px 12px; margin-bottom: 6px;
+            background: rgba(108, 99, 255, 0.05);
+            border-radius: 10px; font-size: 0.85rem;
+            color: var(--text-dark); font-weight: 500;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .error-list li i { color: var(--color-primary); margin-top: 2px; flex-shrink: 0; }
+        .error-list li a {
+            color: var(--color-primary); text-decoration: underline;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
+    ${bgLayerHTML(config.ERROR_501_DOWNLOAD_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card" style="text-align:center;">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
+            <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-triangle-exclamation"></i></div></div>
+            <h1 class="card-title stagger-1">Download Error</h1>
+            <p class="card-subtitle stagger-2">Error when downloading file. Don't panic!</p>
+
+            <div class="stagger-3">
+                <ul class="error-list">
+                    <li><i class="fas fa-bolt"></i><span>Cloudflare Worker cold start (<a href="https://blog.cloudflare.com/eliminating-cold-starts-with-cloudflare-workers/" target="_blank">Learn more</a>)</span></li>
+                    <li><i class="fas fa-gauge-high"></i><span>Worker API request limitations (<a href="https://developers.cloudflare.com/workers/platform/limits/" target="_blank">Learn more</a>)</span></li>
+                    <li><i class="fas fa-clock"></i><span>Google Drive API request timeout</span></li>
+                </ul>
+            </div>
+
+            <div class="stagger-4" style="margin-bottom: 12px;">
+                <p style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Auto reload in</p>
+                <div class="countdown-num" id="countdown">5</div>
+            </div>
+
+            <div class="stagger-5">
+                <button onclick="location.reload();" class="btn-gradient">
+                    <i class="fas fa-rotate-right"></i> Reload Now
+                </button>
+            </div>
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
         </div>
-    </body>
-    </html>
+    </div>
+
+    <script>
+        (function() {
+            var count = 5;
+            var el = document.getElementById("countdown");
+            var timer = setInterval(function() {
+                count--;
+                el.textContent = count;
+                if (count <= 0) { clearInterval(timer); location.reload(); }
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>
     `;
 }
 
 function notFoundPage() {
     return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Page Not Found</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-        <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="theme-color" content="#FF3300">
-        <meta name="application-name" content="YTemp Sharing">
-        <meta name="robots" content="index, follow">
-        <meta name="twitter:card" content="summary">
-        <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, YTemp Sharing, gdtemp, classic, material, workers-script, oauth-consent-screen, google-drive, cloudflare-workers, themes"}">
-        <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:type" content="website">
-        <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-        <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-        <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-        <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-        <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png" || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png" || "https://yuuki0.net/assets/img/icon.png"}">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-            body {
-                background-image: url('${config.ERROR_404_PAGE_BACKGROUND}');
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-    
-            .glass-effect {
-                background-color: rgba(${config.ERROR_404_PAGE_FORM_COLOR || "0, 0, 0"}, 0.5);
-                backdrop-filter: blur(10px);
-                border-radius: 10px;
-                padding: 20px;
-                color: white;
-            }
-            
-            .error-code {
-                font-size: 100px;
-                font-weight: bolder;
-            }
-            
-            a {
-                color: #3498db;
-                font-weight: bolder;
-            }
-        </style>
-        <script>
-            // Function to refresh the page after a specified time
-            function refreshPage(seconds) {
-                setTimeout(function () {
-                    location.reload();
-                }, seconds * 1000);
-            }
-    
-            // Function to display countdown and refresh the page
-            function startCountdown(seconds) {
-                var countdown = seconds;
-                var countdownInterval = setInterval(function () {
-                    document.getElementById("countdown").textContent = countdown;
-                    countdown--;
-    
-                    if (countdown < 0) {
-                        clearInterval(countdownInterval);
-                        location.reload();
-                    }
-                }, 1000);
-            }
-    
-            // Call the functions when the page loads
-            document.addEventListener("DOMContentLoaded", function () {
-                refreshPage(5);
-                startCountdown(5);
-            });
-        </script>
-    </head>
-    <body>
-        <div class="container glass-effect">
-            <h1 class="error-code text-center">404</h1>
-            <h1 class="text-center">File Not Found</h1>
-            <p class="text-center">The requested page does not exist.</p>
-            <div class="text-center">
-                <b>Auto redirecting to main page in:</b>
-                <h1 id="countdown" class="mt-2">5</h1>
-                <a href="#" class="mt-3 btn btn-primary" onclick="location.reload();">Go to Main Page</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    ${pageMeta("Page Not Found")}
+    <style>
+        ${sharedCSS}
+        .glass-card { background: rgba(${config.ERROR_404_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+    </style>
+</head>
+<body>
+    <div class="dip-white"></div>
+    <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
+    ${bgLayerHTML(config.ERROR_404_PAGE_BACKGROUND)}
+
+    <div class="body-wrapper">
+        <div class="glass-card" style="text-align:center;">
+            <div class="logo-container">
+                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
+            <div class="stagger-1"><div class="error-code">404</div></div>
+            <h1 class="card-title stagger-1">Page Not Found</h1>
+            <p class="card-subtitle stagger-2">The requested page does not exist.</p>
+
+            <div class="stagger-3" style="margin-bottom: 12px;">
+                <p style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Auto redirecting in</p>
+                <div class="countdown-num" id="countdown">5</div>
+            </div>
+
+            <div class="stagger-4">
+                <a href="/" class="btn-gradient" style="text-align:center;">
+                    <i class="fas fa-house"></i> Go to Main Page
+                </a>
+            </div>
+            <p class="footer-text stagger-6">Powered by Yuuki0</p>
         </div>
-    </body>
-    </html>
+    </div>
+
+    <script>
+        (function() {
+            var count = 5;
+            var el = document.getElementById("countdown");
+            var timer = setInterval(function() {
+                count--;
+                el.textContent = count;
+                if (count <= 0) { clearInterval(timer); window.location.href = '/'; }
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>
     `;
 }
