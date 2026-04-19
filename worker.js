@@ -1,37 +1,37 @@
 // Start Main Configuration
 const config = {
-// Google API Config
-GOOGLE_CLIENT_ID: "", // Required | It looks like => (1234567890.apps.googleusercontent.com)
-GOOGLE_CLIENT_SECRET: "", // Required | Random code of upper and lower case letters, numbers and symbols
-GOOGLE_REFRESH_TOKEN: "", // Required | Random code of upper and lower case letters, numbers, and symbols with the prefix 1/
-DESTINATION_FOLDER_ID: "", // Required | Find this in the URL when you open your Google Drive Folder
+    // Google API Config
+    GOOGLE_CLIENT_ID: "", // Required | It looks like => (1234567890.apps.googleusercontent.com)
+    GOOGLE_CLIENT_SECRET: "", // Required | Random code of upper and lower case letters, numbers and symbols
+    GOOGLE_REFRESH_TOKEN: "", // Required | Random code of upper and lower case letters, numbers, and symbols with the prefix 1/
+    DESTINATION_FOLDER_ID: "", // Required | Find this in the URL when you open your Google Drive Folder
 
-// Site Config
-PAGE_TITLE: "", // Optional
-PAGE_LOGO: "", // Optional
-META_TITLE: "", // Optional
-META_DESCRIPTION: "", // Optional
-META_KEYWORD: "", // Example => aweasome, myapp, best-app-ever
-META_URL: "", // Example => your.domain.com
+    // Site Config
+    PAGE_TITLE: "", // Optional
+    PAGE_LOGO: "", // Optional
+    META_TITLE: "", // Optional
+    META_DESCRIPTION: "", // Optional
+    META_KEYWORD: "", // Example => aweasome, myapp, best-app-ever
+    META_URL: "", // Example => your.domain.com
 
-// Style and Theme Color
-HOME_PAGE_FORM_COLOR: "", // Default => 0,0,0
-UPLOAD_PAGE_FORM_COLOR: "", // Default => 0,0,0
-EXPIRED_PAGE_FORM_COLOR: "", // Default => 0,0,0
-ERROR_404_PAGE_FORM_COLOR: "", // Default => 0,0,0
-ERROR_404_FILE_FORM_COLOR: "", // Default => 0,0,0
-ERROR_501_UPLOAD_FORM_COLOR: "", // Default => 0,0,0
-ERROR_501_DOWNLOAD_FORM_COLOR: "", // Default => 0,0,0
+    // Style and Theme Color
+    HOME_PAGE_FORM_COLOR: "", // Default => 0,0,0
+    UPLOAD_PAGE_FORM_COLOR: "", // Default => 0,0,0
+    EXPIRED_PAGE_FORM_COLOR: "", // Default => 0,0,0
+    ERROR_404_PAGE_FORM_COLOR: "", // Default => 0,0,0
+    ERROR_404_FILE_FORM_COLOR: "", // Default => 0,0,0
+    ERROR_501_UPLOAD_FORM_COLOR: "", // Default => 0,0,0
+    ERROR_501_DOWNLOAD_FORM_COLOR: "", // Default => 0,0,0
 
-// Background URL
-HOME_PAGE_BACKGROUND: "", // Default => None
-UPLOAD_PAGE_BACKGROUND: "", // Default => None
-EXPIRED_PAGE_BACKGROUND: "", // Default => None
-ERROR_404_PAGE_BACKGROUND: "", // Default => None
-ERROR_404_FILE_BACKGROUND: "", // Default => None
-ERROR_501_UPLOAD_BACKGROUND: "", // Default => None
-ERROR_501_DOWNLOAD_BACKGROUND: "", // Default => None
-// End of Main Configuration
+    // Background URL
+    HOME_PAGE_BACKGROUND: "", // Default => None
+    UPLOAD_PAGE_BACKGROUND: "", // Default => None
+    EXPIRED_PAGE_BACKGROUND: "", // Default => None
+    ERROR_404_PAGE_BACKGROUND: "", // Default => None
+    ERROR_404_FILE_BACKGROUND: "", // Default => None
+    ERROR_501_UPLOAD_BACKGROUND: "", // Default => None
+    ERROR_501_DOWNLOAD_BACKGROUND: "", // Default => None
+    // End of Main Configuration
 };
 // Begin Script
 addEventListener('fetch', (event) => {
@@ -49,10 +49,10 @@ async function handleRequest(request) {
     } else if (url.pathname === "/result") {
         const fileId = url.searchParams.get("id");
         const fileName = url.searchParams.get("name");
-  
+
         // Check if the file exists in Google Drive
         const fileExists = await checkFileExists(fileId);
-  
+
         if (fileExists) {
             const encodedFileName = decodeURIComponent(fileName);
             const fileLink = `https://${host}/download?id=${fileId}&name=${encodeURIComponent(encodedFileName)}`;
@@ -69,9 +69,33 @@ async function handleRequest(request) {
         const fileId = url.searchParams.get("id");
         const fileName = url.searchParams.get("name");
         const decodedFileName = decodeURIComponent(fileName);
-  
+
+        // Detect link preview bots (WhatsApp, Telegram, Facebook, Twitter, Discord, etc.)
+        // These bots auto-fetch URLs to generate previews, which would trigger file deletion
+        const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
+        const isBot = /whatsapp|telegrambot|facebookexternalhit|facebot|twitterbot|discordbot|slackbot|linkedinbot|pinterestbot|redditbot|applebot|line-poker|kakaotalk|viber|skypeuripreview|embedly|quora|showyoubot|outbrain|semrushbot|baiduspider|duckduckbot|yandex|sogou|exabot|ia_archiver|archive\.org_bot|preview/i.test(userAgent);
+
+        if (isBot) {
+            // Return a lightweight HTML page with meta tags for link preview
+            // This prevents bots from triggering file download + deletion
+            return new Response(`<!DOCTYPE html><html><head>
+                <meta charset="utf-8">
+                <title>${decodedFileName} - ${config.PAGE_TITLE || "Temporary File Sharing"}</title>
+                <meta property="og:title" content="${decodedFileName}">
+                <meta property="og:description" content="Click to download this temporary shared file.">
+                <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+                <meta property="og:type" content="website">
+                <meta name="twitter:card" content="summary">
+                <meta name="twitter:title" content="${decodedFileName}">
+                <meta name="twitter:description" content="Click to download this temporary shared file.">
+                <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+            </head><body></body></html>`, {
+                headers: { 'content-type': 'text/html; charset=utf-8' },
+            });
+        }
+
         const file = await downloadFile(fileId);
-  
+
         if (file) {
             // Delete the file from Google Drive after downloading
             const deleted = await deleteFile(fileId);
@@ -93,20 +117,30 @@ async function handleRequest(request) {
                 });
             }
         } else {
-            return new Response(expired(), {
-                status: 404,
-                headers: { 'content-type': 'text/html' },
-            });
+            // Download failed — check if file actually exists before declaring expired
+            const stillExists = await checkFileExists(fileId);
+            if (stillExists) {
+                // File exists but download failed (transient API error / cold start)
+                return new Response(errordownloadPage(), {
+                    status: 500,
+                    headers: { 'content-type': 'text/html' },
+                });
+            } else {
+                return new Response(expired(), {
+                    status: 404,
+                    headers: { 'content-type': 'text/html' },
+                });
+            }
         }
     } else if (url.pathname === "/upload" && request.method === "POST") {
         try {
             const formData = await request.formData();
             const file = formData.get("file");
             const fileName = file.name;
-  
+
             // Upload file to Google Drive and get file ID
             const fileId = await uploadFileToDrive(file);
-  
+
             if (fileId) {
                 const redirectUrl = `https://${host}/result?id=${fileId}&name=${encodeURIComponent(fileName)}`;
                 return Response.redirect(redirectUrl);
@@ -124,25 +158,25 @@ async function handleRequest(request) {
             });
         }
     }
-  
+
     return new Response(notFoundPage(), {
         status: 404,
         headers: { 'content-type': 'text/html' },
     });
 }
-  
-  async function uploadFileToDrive(file) {
+
+async function uploadFileToDrive(file) {
     const accessToken = await getAccessToken();
     const metadata = {
         name: file.name,
         mimeType: file.type,
         parents: [config.DESTINATION_FOLDER_ID],
     };
-  
+
     const form = new FormData();
     form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
     form.append("file", file);
-  
+
     const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
         method: "POST",
         headers: {
@@ -150,28 +184,28 @@ async function handleRequest(request) {
         },
         body: form,
     });
-  
+
     const data = await response.json();
     return data.id;
-  }
-  
-  async function downloadFile(fileId) {
+}
+
+async function downloadFile(fileId) {
     const accessToken = await getAccessToken();
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
     });
-  
+
     if (response.ok) {
         const arrayBuffer = await response.arrayBuffer();
         return new Uint8Array(arrayBuffer);
     } else {
         return null;
     }
-  }
-  
-  async function deleteFile(fileId) {
+}
+
+async function deleteFile(fileId) {
     const accessToken = await getAccessToken();
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
         method: "DELETE",
@@ -179,22 +213,22 @@ async function handleRequest(request) {
             Authorization: `Bearer ${accessToken}`,
         },
     });
-  
+
     return response.ok;
-  }
-  
-  async function checkFileExists(fileId) {
+}
+
+async function checkFileExists(fileId) {
     const accessToken = await getAccessToken();
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
     });
-  
+
     return response.ok;
-  }
-  
-  async function getAccessToken() {
+}
+
+async function getAccessToken() {
     const tokenResponse = await fetch("https://www.googleapis.com/oauth2/v4/token", {
         method: "POST",
         headers: {
@@ -207,12 +241,12 @@ async function handleRequest(request) {
             grant_type: "refresh_token",
         }),
     });
-  
+
     const tokenData = await tokenResponse.json();
     return tokenData.access_token;
-  }
-  
-  const uploadPage = `
+}
+
+const uploadPage = `
   <!DOCTYPE html>
   <html>
   <head>
@@ -443,7 +477,7 @@ async function handleRequest(request) {
   </html>
 `;
 
-  function downloadPage(fileLink, fileName) {
+function downloadPage(fileLink, fileName) {
     return `
     <!DOCTYPE html>
     <html>
@@ -553,9 +587,9 @@ async function handleRequest(request) {
     </body>
     </html> 
     `;
-  }
-  
-  function notFoundFile() {
+}
+
+function notFoundFile() {
     return `
     <!DOCTYPE html>
     <html>
@@ -624,9 +658,9 @@ async function handleRequest(request) {
     </body>
     </html>    
     `;
-  }
+}
 
-  function expired() {
+function expired() {
     return `
     <!DOCTYPE html>
     <html>
@@ -689,9 +723,9 @@ async function handleRequest(request) {
     </body>
     </html>    
     `;
-  }
+}
 
-  function errorPage() {
+function errorPage() {
     return `
     <!DOCTYPE html>
     <html>
@@ -793,9 +827,9 @@ async function handleRequest(request) {
     </body>
     </html>
     `;
-  }
-  
-  function errordownloadPage() {
+}
+
+function errordownloadPage() {
     return `
     <!DOCTYPE html>
     <html>
@@ -897,9 +931,9 @@ async function handleRequest(request) {
     </body>
     </html>
     `;
-  }
-  
-  function notFoundPage() {
+}
+
+function notFoundPage() {
     return `
     <!DOCTYPE html>
     <html>
@@ -1001,4 +1035,4 @@ async function handleRequest(request) {
     </body>
     </html>
     `;
-  }
+}
