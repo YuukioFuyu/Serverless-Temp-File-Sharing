@@ -68,7 +68,7 @@ async function handleRequest(request) {
     } else if (url.pathname === "/download") {
         const fileId = url.searchParams.get("id");
         const fileName = url.searchParams.get("name");
-        const encodedFileName = decodeURIComponent(fileName);
+        const decodedFileName = decodeURIComponent(fileName);
   
         const file = await downloadFile(fileId);
   
@@ -76,10 +76,14 @@ async function handleRequest(request) {
             // Delete the file from Google Drive after downloading
             const deleted = await deleteFile(fileId);
             if (deleted) {
+                // RFC 5987/6266: Use filename* for proper Unicode support
+                // ASCII fallback replaces non-ASCII chars with underscores
+                const asciiFallback = decodedFileName.replace(/[^\x20-\x7E]/g, '_');
+                const utf8Encoded = encodeURIComponent(decodedFileName).replace(/'/g, '%27');
                 return new Response(file, {
                     headers: {
                         "content-type": "application/octet-stream",
-                        "content-disposition": `attachment; filename="${encodedFileName}"`,
+                        "content-disposition": `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`,
                     },
                 });
             } else {
