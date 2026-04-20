@@ -1,50 +1,32 @@
-// Start Main Configuration
-const config = {
-    // Google API Config
-    GOOGLE_CLIENT_ID: "", // Required | It looks like => (1234567890.apps.googleusercontent.com)
-    GOOGLE_CLIENT_SECRET: "", // Required | Random code of upper and lower case letters, numbers and symbols
-    GOOGLE_REFRESH_TOKEN: "", // Required | Random code of upper and lower case letters, numbers, and symbols with the prefix 1/
-    DESTINATION_FOLDER_ID: "", // Required | Find this in the URL when you open your Google Drive Folder
-
-    // Site Config
-    PAGE_TITLE: "", // Optional
-    PAGE_LOGO: "", // Optional
-    META_TITLE: "", // Optional
-    META_DESCRIPTION: "", // Optional
-    META_KEYWORD: "", // Example => aweasome, myapp, best-app-ever
-    META_URL: "", // Example => your.domain.com
-
-    // Style and Theme Color
-    HOME_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
-    UPLOAD_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
-    EXPIRED_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
-    ERROR_404_PAGE_FORM_COLOR: "", // Default => 255, 255, 255
-    ERROR_404_FILE_FORM_COLOR: "", // Default => 255, 255, 255
-    ERROR_501_UPLOAD_FORM_COLOR: "", // Default => 255, 255, 255
-    ERROR_501_DOWNLOAD_FORM_COLOR: "", // Default => 255, 255, 255
-
-    // Background URL
-    HOME_PAGE_BACKGROUND: "", // Default => Animated Gradient
-    UPLOAD_PAGE_BACKGROUND: "", // Default => Animated Gradient
-    EXPIRED_PAGE_BACKGROUND: "", // Default => Animated Gradient
-    ERROR_404_PAGE_BACKGROUND: "", // Default => Animated Gradient
-    ERROR_404_FILE_BACKGROUND: "", // Default => Animated Gradient
-    ERROR_501_UPLOAD_BACKGROUND: "", // Default => Animated Gradient
-    ERROR_501_DOWNLOAD_BACKGROUND: "", // Default => Animated Gradient
-    // End of Main Configuration
-};
+// Cloudflare Workers Environment Variables & Secrets
+// Configure these in Cloudflare Dashboard > Workers > Settings > Variables and Secrets
+// Or define them in wrangler.toml for auto-deploy
+//
+// [Secrets] — Set as "Secret" type in dashboard:
+//   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, DESTINATION_FOLDER_ID
+//
+// [Variables] — Set as "Text" type in dashboard (all optional):
+//   PAGE_TITLE, PAGE_LOGO, META_TITLE, META_DESCRIPTION, META_KEYWORD, META_URL,
+//   HOME_PAGE_FORM_COLOR, UPLOAD_PAGE_FORM_COLOR, EXPIRED_PAGE_FORM_COLOR,
+//   ERROR_404_PAGE_FORM_COLOR, ERROR_404_FILE_FORM_COLOR,
+//   ERROR_501_UPLOAD_FORM_COLOR, ERROR_501_DOWNLOAD_FORM_COLOR,
+//   HOME_PAGE_BACKGROUND, UPLOAD_PAGE_BACKGROUND, EXPIRED_PAGE_BACKGROUND,
+//   ERROR_404_PAGE_BACKGROUND, ERROR_404_FILE_BACKGROUND,
+//   ERROR_501_UPLOAD_BACKGROUND, ERROR_501_DOWNLOAD_BACKGROUND
 
 // Begin Script
-addEventListener('fetch', (event) => {
-    event.respondWith(handleRequest(event.request));
-});
+export default {
+    async fetch(request, env) {
+        return handleRequest(request, env);
+    },
+};
 
-async function handleRequest(request) {
+async function handleRequest(request, env) {
     const url = new URL(request.url);
     const host = request.headers.get("host");
 
     if (url.pathname === "/") {
-        return new Response(uploadPage, {
+        return new Response(uploadPage(env), {
             headers: { 'content-type': 'text/html; charset=utf-8' },
         });
     } else if (url.pathname === "/result") {
@@ -52,16 +34,16 @@ async function handleRequest(request) {
         const fileName = url.searchParams.get("name");
 
         // Check if the file exists in Google Drive
-        const fileExists = await checkFileExists(fileId);
+        const fileExists = await checkFileExists(fileId, env);
 
         if (fileExists) {
             const encodedFileName = decodeURIComponent(fileName);
             const fileLink = `https://${host}/download?id=${fileId}&name=${encodeURIComponent(encodedFileName)}`;
-            return new Response(downloadPage(fileLink, encodedFileName), {
+            return new Response(downloadPage(fileLink, encodedFileName, env), {
                 headers: { 'content-type': 'text/html; charset=utf-8' },
             });
         } else {
-            return new Response(notFoundFile(), {
+            return new Response(notFoundFile(env), {
                 status: 404,
                 headers: { 'content-type': 'text/html; charset=utf-8' },
             });
@@ -81,25 +63,25 @@ async function handleRequest(request) {
             // This prevents bots from triggering file download + deletion
             return new Response(`<!DOCTYPE html><html><head>
                 <meta charset="utf-8">
-                <title>${decodedFileName} - ${config.PAGE_TITLE || "Temporary File Sharing"}</title>
+                <title>${decodedFileName} - ${env.PAGE_TITLE || "Temporary File Sharing"}</title>
                 <meta property="og:title" content="${decodedFileName}">
                 <meta property="og:description" content="Click to download this temporary shared file.">
-                <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+                <meta property="og:image" content="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
                 <meta property="og:type" content="website">
                 <meta name="twitter:card" content="summary">
                 <meta name="twitter:title" content="${decodedFileName}">
                 <meta name="twitter:description" content="Click to download this temporary shared file.">
-                <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+                <meta name="twitter:image" content="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
             </head><body></body></html>`, {
                 headers: { 'content-type': 'text/html; charset=utf-8' },
             });
         }
 
-        const file = await downloadFile(fileId);
+        const file = await downloadFile(fileId, env);
 
         if (file) {
             // Delete the file from Google Drive after downloading
-            const deleted = await deleteFile(fileId);
+            const deleted = await deleteFile(fileId, env);
             if (deleted) {
                 // RFC 5987/6266: Use filename* for proper Unicode support
                 // ASCII fallback replaces non-ASCII chars with underscores
@@ -112,22 +94,22 @@ async function handleRequest(request) {
                     },
                 });
             } else {
-                return new Response(errordownloadPage(), {
+                return new Response(errordownloadPage(env), {
                     status: 500,
                     headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             }
         } else {
             // Download failed — check if file actually exists before declaring expired
-            const stillExists = await checkFileExists(fileId);
+            const stillExists = await checkFileExists(fileId, env);
             if (stillExists) {
                 // File exists but download failed (transient API error / cold start)
-                return new Response(errordownloadPage(), {
+                return new Response(errordownloadPage(env), {
                     status: 500,
                     headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
             } else {
-                return new Response(expired(), {
+                return new Response(expired(env), {
                     status: 404,
                     headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
@@ -140,13 +122,13 @@ async function handleRequest(request) {
             const fileName = file.name;
 
             // Upload file to Google Drive and get file ID
-            const fileId = await uploadFileToDrive(file);
+            const fileId = await uploadFileToDrive(file, env);
 
             if (fileId) {
                 const redirectUrl = `https://${host}/result?id=${fileId}&name=${encodeURIComponent(fileName)}`;
                 return Response.redirect(redirectUrl);
             } else {
-                return new Response(errorPage(), {
+                return new Response(errorPage(env), {
                     status: 500,
                     headers: { 'content-type': 'text/html; charset=utf-8' },
                 });
@@ -160,18 +142,18 @@ async function handleRequest(request) {
         }
     }
 
-    return new Response(notFoundPage(), {
+    return new Response(notFoundPage(env), {
         status: 404,
         headers: { 'content-type': 'text/html; charset=utf-8' },
     });
 }
 
-async function uploadFileToDrive(file) {
-    const accessToken = await getAccessToken();
+async function uploadFileToDrive(file, env) {
+    const accessToken = await getAccessToken(env);
     const metadata = {
         name: file.name,
         mimeType: file.type,
-        parents: [config.DESTINATION_FOLDER_ID],
+        parents: [env.DESTINATION_FOLDER_ID],
     };
 
     const form = new FormData();
@@ -190,8 +172,8 @@ async function uploadFileToDrive(file) {
     return data.id;
 }
 
-async function downloadFile(fileId) {
-    const accessToken = await getAccessToken();
+async function downloadFile(fileId, env) {
+    const accessToken = await getAccessToken(env);
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -206,8 +188,8 @@ async function downloadFile(fileId) {
     }
 }
 
-async function deleteFile(fileId) {
-    const accessToken = await getAccessToken();
+async function deleteFile(fileId, env) {
+    const accessToken = await getAccessToken(env);
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
         method: "DELETE",
         headers: {
@@ -218,8 +200,8 @@ async function deleteFile(fileId) {
     return response.ok;
 }
 
-async function checkFileExists(fileId) {
-    const accessToken = await getAccessToken();
+async function checkFileExists(fileId, env) {
+    const accessToken = await getAccessToken(env);
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -229,16 +211,16 @@ async function checkFileExists(fileId) {
     return response.ok;
 }
 
-async function getAccessToken() {
+async function getAccessToken(env) {
     const tokenResponse = await fetch("https://www.googleapis.com/oauth2/v4/token", {
         method: "POST",
         headers: {
             "content-type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-            client_id: config.GOOGLE_CLIENT_ID,
-            client_secret: config.GOOGLE_CLIENT_SECRET,
-            refresh_token: config.GOOGLE_REFRESH_TOKEN,
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            refresh_token: env.GOOGLE_REFRESH_TOKEN,
             grant_type: "refresh_token",
         }),
     });
@@ -251,30 +233,30 @@ async function getAccessToken() {
 // Shared UI Components
 // ===========================
 
-function pageMeta(title) {
+function pageMeta(title, env) {
     return `
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
     <title>${title}</title>
-    <meta name="description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta name="description" content="${env.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
     <meta name="theme-color" content="#6C63FF">
-    <meta name="application-name" content="${config.PAGE_TITLE || "YTemp Sharing"}">
+    <meta name="application-name" content="${env.PAGE_TITLE || "YTemp Sharing"}">
     <meta name="robots" content="index, follow">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-    <meta name="twitter:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-    <meta name="keywords" content="${config.META_KEYWORD || "YTemp Sharing, google, drive, temporary, file-sharing, cloudflare-workers"}">
-    <meta name="twitter:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-    <meta name="twitter:url" content="${config.META_URL || "https://yuuki0.net"}">
-    <link rel="shortcut icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-    <meta property="og:site_name" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta name="twitter:image" content="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta name="twitter:description" content="${env.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta name="keywords" content="${env.META_KEYWORD || "YTemp Sharing, google, drive, temporary, file-sharing, cloudflare-workers"}">
+    <meta name="twitter:title" content="${env.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta name="twitter:url" content="${env.META_URL || "https://yuuki0.net"}">
+    <link rel="shortcut icon" href="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta property="og:site_name" content="${env.META_TITLE || "Temporary File Sharing by Yuuki0"}">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-    <meta property="og:description" content="${config.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
-    <meta property="og:title" content="${config.META_TITLE || "Temporary File Sharing by Yuuki0"}">
-    <meta property="og:url" content="${config.META_URL || "https://yuuki0.net"}">
-    <link rel="apple-touch-icon" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
-    <link rel="icon" type="image/png" sizes="32x32" href="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta property="og:image" content="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <meta property="og:description" content="${env.META_DESCRIPTION || "Yuuki0's temporary file sharing platform designed to provide a fast and secure way for users to upload and share files with others."}">
+    <meta property="og:title" content="${env.META_TITLE || "Temporary File Sharing by Yuuki0"}">
+    <meta property="og:url" content="${env.META_URL || "https://yuuki0.net"}">
+    <link rel="apple-touch-icon" href="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
+    <link rel="icon" type="image/png" sizes="32x32" href="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">`;
 }
@@ -517,14 +499,15 @@ function bgLayerHTML(bgUrl) {
 // Page Templates
 // ===========================
 
-const uploadPage = `
+function uploadPage(env) {
+    return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta(config.PAGE_TITLE || "Temporary File Sharing")}
+    ${pageMeta(env.PAGE_TITLE || "Temporary File Sharing", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.HOME_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.HOME_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
 
         /* Drop Zone */
         .drop-zone {
@@ -582,15 +565,15 @@ const uploadPage = `
     <div class="splash-overlay"></div>
 
     <!-- Background -->
-    ${bgLayerHTML(config.HOME_PAGE_BACKGROUND)}
+    ${bgLayerHTML(env.HOME_PAGE_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
 
-            <h1 class="card-title stagger-1">${config.PAGE_TITLE || "Temporary File Sharing"}</h1>
+            <h1 class="card-title stagger-1">${env.PAGE_TITLE || "Temporary File Sharing"}</h1>
             <p class="card-subtitle stagger-2">Upload and share files securely</p>
 
             <form enctype="multipart/form-data" method="POST" action="/upload" id="uploadForm">
@@ -708,17 +691,18 @@ const uploadPage = `
 </body>
 </html>
 `;
+}
 
-function downloadPage(fileLink, fileName) {
+function downloadPage(fileLink, fileName, env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("File Shared")}
+    ${pageMeta("File Shared", env)}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.UPLOAD_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.UPLOAD_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
 
         .success-icon {
             font-size: 2.8rem; margin-bottom: 8px;
@@ -774,12 +758,12 @@ function downloadPage(fileLink, fileName) {
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(0, 200, 83, 0.3);"></div>
-    ${bgLayerHTML(config.UPLOAD_PAGE_BACKGROUND)}
+    ${bgLayerHTML(env.UPLOAD_PAGE_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
 
             <div class="stagger-1" style="text-align:center;">
@@ -850,15 +834,15 @@ function downloadPage(fileLink, fileName) {
     `;
 }
 
-function notFoundFile() {
+function notFoundFile(env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("File Not Found")}
+    ${pageMeta("File Not Found", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.ERROR_404_FILE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.ERROR_404_FILE_FORM_COLOR || "255, 255, 255"}, 0.82); }
         .icon-wrap {
             font-size: 3rem; margin-bottom: 10px;
             background: linear-gradient(135deg, #ff6b6b, #ee5a24);
@@ -870,12 +854,12 @@ function notFoundFile() {
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
-    ${bgLayerHTML(config.ERROR_404_FILE_BACKGROUND)}
+    ${bgLayerHTML(env.ERROR_404_FILE_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card" style="text-align:center;">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
             <div class="stagger-1"><div class="error-code">404</div></div>
             <h1 class="card-title stagger-1">File Not Found</h1>
@@ -893,15 +877,15 @@ function notFoundFile() {
     `;
 }
 
-function expired() {
+function expired(env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("File Expired")}
+    ${pageMeta("File Expired", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.EXPIRED_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.EXPIRED_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
         .icon-wrap {
             font-size: 3rem; margin-bottom: 10px;
             background: linear-gradient(135deg, #ffb347, #ff6b6b);
@@ -913,12 +897,12 @@ function expired() {
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(255, 179, 71, 0.3);"></div>
-    ${bgLayerHTML(config.EXPIRED_PAGE_BACKGROUND)}
+    ${bgLayerHTML(env.EXPIRED_PAGE_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card" style="text-align:center;">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
             <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-hourglass-end"></i></div></div>
             <h1 class="card-title stagger-1">File Expired</h1>
@@ -936,15 +920,15 @@ function expired() {
     `;
 }
 
-function errorPage() {
+function errorPage(env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("Unexpected Error")}
+    ${pageMeta("Unexpected Error", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.ERROR_501_UPLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.ERROR_501_UPLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
         .icon-wrap {
             font-size: 3rem; margin-bottom: 10px;
             background: linear-gradient(135deg, #ff6b6b, #ee5a24);
@@ -972,12 +956,12 @@ function errorPage() {
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
-    ${bgLayerHTML(config.ERROR_501_UPLOAD_BACKGROUND)}
+    ${bgLayerHTML(env.ERROR_501_UPLOAD_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card" style="text-align:center;">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
             <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-triangle-exclamation"></i></div></div>
             <h1 class="card-title stagger-1">Unexpected Error</h1>
@@ -1021,15 +1005,15 @@ function errorPage() {
     `;
 }
 
-function errordownloadPage() {
+function errordownloadPage(env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("Download Error")}
+    ${pageMeta("Download Error", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.ERROR_501_DOWNLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.ERROR_501_DOWNLOAD_FORM_COLOR || "255, 255, 255"}, 0.82); }
         .icon-wrap {
             font-size: 3rem; margin-bottom: 10px;
             background: linear-gradient(135deg, #ff6b6b, #ee5a24);
@@ -1057,12 +1041,12 @@ function errordownloadPage() {
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
-    ${bgLayerHTML(config.ERROR_501_DOWNLOAD_BACKGROUND)}
+    ${bgLayerHTML(env.ERROR_501_DOWNLOAD_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card" style="text-align:center;">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
             <div class="stagger-1"><div class="icon-wrap"><i class="fas fa-triangle-exclamation"></i></div></div>
             <h1 class="card-title stagger-1">Download Error</h1>
@@ -1106,26 +1090,26 @@ function errordownloadPage() {
     `;
 }
 
-function notFoundPage() {
+function notFoundPage(env) {
     return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    ${pageMeta("Page Not Found")}
+    ${pageMeta("Page Not Found", env)}
     <style>
         ${sharedCSS}
-        .glass-card { background: rgba(${config.ERROR_404_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
+        .glass-card { background: rgba(${env.ERROR_404_PAGE_FORM_COLOR || "255, 255, 255"}, 0.82); }
     </style>
 </head>
 <body>
     <div class="dip-white"></div>
     <div class="splash-overlay" style="background: rgba(255, 100, 100, 0.3);"></div>
-    ${bgLayerHTML(config.ERROR_404_PAGE_BACKGROUND)}
+    ${bgLayerHTML(env.ERROR_404_PAGE_BACKGROUND)}
 
     <div class="body-wrapper">
         <div class="glass-card" style="text-align:center;">
             <div class="logo-container">
-                <img src="${config.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
+                <img src="${env.PAGE_LOGO || "https://yuuki0.net/assets/img/icon.png"}" alt="Logo">
             </div>
             <div class="stagger-1"><div class="error-code">404</div></div>
             <h1 class="card-title stagger-1">Page Not Found</h1>
