@@ -1,0 +1,41 @@
+name = "serverless-temp-file-sharing"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# ============================================================
+# Optional Variables — Set as "Text" in Cloudflare Dashboard
+# These customize the UI appearance and SEO metadata.
+# All variables below are optional and have sensible defaults.
+# ============================================================
+[vars]
+PAGE_TITLE = ""
+PAGE_LOGO = ""
+META_TITLE = ""
+META_DESCRIPTION = ""
+META_KEYWORD = ""
+META_URL = ""
+HOME_PAGE_FORM_COLOR = ""
+UPLOAD_PAGE_FORM_COLOR = ""
+EXPIRED_PAGE_FORM_COLOR = ""
+ERROR_404_PAGE_FORM_COLOR = ""
+ERROR_404_FILE_FORM_COLOR = ""
+ERROR_501_UPLOAD_FORM_COLOR = ""
+ERROR_501_DOWNLOAD_FORM_COLOR = ""
+HOME_PAGE_BACKGROUND = ""
+UPLOAD_PAGE_BACKGROUND = ""
+EXPIRED_PAGE_BACKGROUND = ""
+ERROR_404_PAGE_BACKGROUND = ""
+ERROR_404_FILE_BACKGROUND = ""
+ERROR_501_UPLOAD_BACKGROUND = ""
+ERROR_501_DOWNLOAD_BACKGROUND = ""
+
+# ============================================================
+# Required Secrets — Set as "Secret" in Cloudflare Dashboard
+# Do NOT put actual secret values here. Configure them via:
+#   Cloudflare Dashboard > Workers > Settings > Variables and Secrets
+# Or use `wrangler secret put <KEY>` for CLI deployment.
+# ============================================================
+# GOOGLE_CLIENT_ID       → Google OAuth 2.0 Client ID
+# GOOGLE_CLIENT_SECRET   → Google OAuth 2.0 Client Secret
+# GOOGLE_REFRESH_TOKEN   → Google OAuth 2.0 Refresh Token
+# DESTINATION_FOLDER_ID  → Google Drive Folder ID for uploads

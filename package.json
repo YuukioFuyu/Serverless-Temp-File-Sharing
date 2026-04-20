@@ -1,0 +1,48 @@
+{
+  "name": "serverless-temp-file-sharing",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Serverless Temporary File Sharing using Cloudflare Worker and Google Drive API",
+  "main": "worker.js",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "cloudflare": {
+    "bindings": {
+      "GOOGLE_CLIENT_ID": {
+        "description": "Google OAuth 2.0 Client ID (e.g. 1234567890.apps.googleusercontent.com). Create one at https://console.cloud.google.com/apis/credentials",
+        "type": "secret"
+      },
+      "GOOGLE_CLIENT_SECRET": {
+        "description": "Google OAuth 2.0 Client Secret. Found in the OAuth 2.0 credentials page.",
+        "type": "secret"
+      },
+      "GOOGLE_REFRESH_TOKEN": {
+        "description": "Google OAuth 2.0 Refresh Token. Obtain via OAuth 2.0 Playground: https://developers.google.com/oauthplayground",
+        "type": "secret"
+      },
+      "DESTINATION_FOLDER_ID": {
+        "description": "Google Drive Folder ID where uploaded files will be stored. Found at the end of the folder URL: https://drive.google.com/drive/folders/<FOLDER_ID>",
+        "type": "secret"
+      },
+      "PAGE_TITLE": {
+        "description": "(Optional) Custom page title. Default: Temporary File Sharing"
+      },
+      "PAGE_LOGO": {
+        "description": "(Optional) Custom logo URL for the page header and favicon."
+      },
+      "META_TITLE": {
+        "description": "(Optional) Custom meta title for SEO and social sharing."
+      },
+      "META_DESCRIPTION": {
+        "description": "(Optional) Custom meta description for SEO and social sharing."
+      },
+      "META_KEYWORD": {
+        "description": "(Optional) Comma-separated keywords for SEO. Example: awesome, myapp, best-app-ever"
+      },
+      "META_URL": {
+        "description": "(Optional) Your custom domain URL. Example: your.domain.com"
+      }
+    }
+  }
+}
