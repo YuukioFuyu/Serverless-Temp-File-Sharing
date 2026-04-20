@@ -12,13 +12,22 @@ Discover the world of streamlined and costless file sharing through our innovati
 
 <hr>
 
-![Yuuki0 Temporary File Sharing](https://github.com/YuukioFuyu/Serverless-Temp-File-Sharing/assets/79379934/c564b9c3-d89d-4d1d-9a5d-e8ead2696389)
-![File Shared](https://github.com/YuukioFuyu/Serverless-Temp-File-Sharing/assets/79379934/6fcf20ed-dea5-4830-b7f2-5d6d4372c8d3)
+<img width="auto" alt="Upload Page" src="https://github.com/user-attachments/assets/d9b54eff-af3e-488a-a68d-d8ffa08e0787" />
+<img width="auto" alt="Download Page" src="https://github.com/user-attachments/assets/5ed6bcf5-f881-42b8-abf8-c88f3b823246" />
 
 <hr>
 
-# Installation
-## Getting Google Drive API Credentials for Cloudflare Worker Project
+# Getting Started
+
+## Deploying `worker.js` from GitHub to Cloudflare Worker with Free Plan
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YuukioFuyu/Serverless-Temp-File-Sharing)
+
+Click the button above to automatically deploy this project to your Cloudflare Workers account. During the deployment process, you will be prompted to enter the required **Secrets** and optional **Variables**.
+
+<hr>
+
+## Getting Google Drive API Credentials
 1. **Create a Google Cloud Platform Project:**
    - Go to the Google Cloud Console: [https://console.cloud.google.com/](https://console.cloud.google.com/)
    - Create a new project or select an existing project.
@@ -48,52 +57,89 @@ Discover the world of streamlined and costless file sharing through our innovati
    - Once authorized, exchange the authorization code for tokens.
    - The refresh token will be included in the response. Make sure to note it down.
 
-5. **Use the Credentials in Your Cloudflare Worker:**
-   - Store the client ID, client secret, and refresh token securely as environment variables or secrets in your Cloudflare Worker.
+<hr>
 
+## Configuring Variables and Secrets
 
-## Deploying `worker.js` from GitHub to Cloudflare Worker with Free Plan
-1. **Prerequisites:**
-   - Make sure you have a Cloudflare account. If not, sign up at [https://www.cloudflare.com](https://www.cloudflare.com).
+After deployment, configure your worker's environment in the Cloudflare Dashboard:
 
-3. **Create a Cloudflare Worker:**
-   - Log in to your Cloudflare account.
-   - Go to the "Workers" section from the Cloudflare dashboard.
-   - Click the "Create a Worker" button.
+**Workers & Pages → Your Worker → Settings → Variables and Secrets**
 
-3. **Configure GitHub Repository:**
-   - Fork the repository "Serverless-Temp-File-Sharing" on [Yuukio Fuyu Github Page](https://github.com/YuukioFuyu/Serverless-Temp-File-Sharing).
-   - Go to your forked repository.
-   - Navigate to the `worker.js` file in the repository.
+### Required Secrets
+Set these as **Secret** type in the dashboard:
 
-4. **Modify the Script:**
-   - Open the `worker.js` file in your forked repository.
-   - Make any necessary configuration changes or adjustments as needed for your deployment.
-   - Edit this object in the script with the details you generated above.
-```
-GOOGLE_CLIENT_ID: "",
-GOOGLE_CLIENT_SECRET: "",
-GOOGLE_REFRESH_TOKEN: "",
-DESTINATION_FOLDER_ID: "",
-```
-> The Destination Folder ID can be found at the back of the Google Drive URL when you open one of your folders.
-> Example: `https://drive.google.com/drive/u/0/folders/`[YOUR_DESTINATION_FOLDER_ID]
+| Variable Name | Type | Description |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | Secret | Google OAuth 2.0 Client ID (e.g. `1234567890.apps.googleusercontent.com`) |
+| `GOOGLE_CLIENT_SECRET` | Secret | Google OAuth 2.0 Client Secret |
+| `GOOGLE_REFRESH_TOKEN` | Secret | Google OAuth 2.0 Refresh Token (prefix `1//`) |
+| `DESTINATION_FOLDER_ID` | Secret | Google Drive Folder ID for uploaded files |
 
-5. **Deploy to Cloudflare:**
-   - Copy the content of the `worker.js` file in your forked repository.
+> **Destination Folder ID** can be found at the end of the Google Drive URL when you open one of your folders:
+> `https://drive.google.com/drive/u/0/folders/`**YOUR_DESTINATION_FOLDER_ID**
 
-7. **Create a New Cloudflare Worker:**
-   - Go back to your Cloudflare Workers dashboard.
-   - In the "Script" section, paste the content of the `worker.js` file.
+### Optional Variables
+Set these as **Text** type in the dashboard to customize the UI:
 
-7. **Deploy and Test:**
-   - Click the "Save and Deploy" button to deploy the worker.
-   - Once the deployment is successful, you'll receive a worker URL.
+| Variable Name | Type | Description | Default |
+|---|---|---|---|
+| `PAGE_TITLE` | Text | Page title displayed on the header | `Temporary File Sharing` |
+| `PAGE_LOGO` | Text | Logo image URL | Yuuki0 icon |
+| `META_TITLE` | Text | SEO meta title | `Temporary File Sharing by Yuuki0` |
+| `META_DESCRIPTION` | Text | SEO meta description | Default description |
+| `META_KEYWORD` | Text | SEO keywords (comma-separated) | Default keywords |
+| `META_URL` | Text | Your custom domain URL | `https://yuuki0.net` |
+| `HOME_PAGE_FORM_COLOR` | Text | Upload page card color (RGB) | `255, 255, 255` |
+| `UPLOAD_PAGE_FORM_COLOR` | Text | Result page card color (RGB) | `255, 255, 255` |
+| `EXPIRED_PAGE_FORM_COLOR` | Text | Expired page card color (RGB) | `255, 255, 255` |
+| `ERROR_404_PAGE_FORM_COLOR` | Text | 404 page card color (RGB) | `255, 255, 255` |
+| `ERROR_404_FILE_FORM_COLOR` | Text | File not found card color (RGB) | `255, 255, 255` |
+| `ERROR_501_UPLOAD_FORM_COLOR` | Text | Upload error card color (RGB) | `255, 255, 255` |
+| `ERROR_501_DOWNLOAD_FORM_COLOR` | Text | Download error card color (RGB) | `255, 255, 255` |
+| `HOME_PAGE_BACKGROUND` | Text | Upload page background image URL | Animated Gradient |
+| `UPLOAD_PAGE_BACKGROUND` | Text | Result page background image URL | Animated Gradient |
+| `EXPIRED_PAGE_BACKGROUND` | Text | Expired page background image URL | Animated Gradient |
+| `ERROR_404_PAGE_BACKGROUND` | Text | 404 page background image URL | Animated Gradient |
+| `ERROR_404_FILE_BACKGROUND` | Text | File not found background image URL | Animated Gradient |
+| `ERROR_501_UPLOAD_BACKGROUND` | Text | Upload error background image URL | Animated Gradient |
+| `ERROR_501_DOWNLOAD_BACKGROUND` | Text | Download error background image URL | Animated Gradient |
 
-8. **Configure Routes:**
-   - To route incoming requests to your Cloudflare Worker, configure the routes.
-   - Go to the "Routes" section in the Cloudflare Workers dashboard.
-   - Add a new route (e.g., `https://your-subdomain.your-domain.com/*`) and associate it with the deployed worker.
+> [!TIP]
+> You can also bulk-configure variables using **JSON** type in the dashboard. Copy and paste the JSON below, then modify the values as needed:
+> ```json
+> {
+>   "PAGE_TITLE": "",
+>   "PAGE_LOGO": "",
+>   "META_TITLE": "",
+>   "META_DESCRIPTION": "",
+>   "META_KEYWORD": "",
+>   "META_URL": "",
+>   "HOME_PAGE_FORM_COLOR": "",
+>   "UPLOAD_PAGE_FORM_COLOR": "",
+>   "EXPIRED_PAGE_FORM_COLOR": "",
+>   "ERROR_404_PAGE_FORM_COLOR": "",
+>   "ERROR_404_FILE_FORM_COLOR": "",
+>   "ERROR_501_UPLOAD_FORM_COLOR": "",
+>   "ERROR_501_DOWNLOAD_FORM_COLOR": "",
+>   "HOME_PAGE_BACKGROUND": "",
+>   "UPLOAD_PAGE_BACKGROUND": "",
+>   "EXPIRED_PAGE_BACKGROUND": "",
+>   "ERROR_404_PAGE_BACKGROUND": "",
+>   "ERROR_404_FILE_BACKGROUND": "",
+>   "ERROR_501_UPLOAD_BACKGROUND": "",
+>   "ERROR_501_DOWNLOAD_BACKGROUND": ""
+> }
+> ```
 
-9. **Testing:**
-    - Access the URL of your worker (e.g., `https://your-subdomain.your-domain.com/`) to test the deployed script.
+<hr>
+
+## Configure Routes (Optional)
+
+If you want to use a custom domain instead of the default `*.workers.dev` subdomain:
+
+1. Go to the **Routes** section in the Cloudflare Workers dashboard.
+2. Add a new route (e.g., `https://your-subdomain.your-domain.com/*`) and associate it with the deployed worker.
+
+## Testing
+
+Access the URL of your worker (e.g., `https://your-subdomain.your-domain.com/` or `https://your-worker.workers.dev/`) to test the deployed script.
